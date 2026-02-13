@@ -16,7 +16,13 @@ google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
 google-api-python-client==2.116.0
 
-# Future dependencies (placeholder for Bronze Tier expansion)
+# Silver Tier - HTTP requests for MCP communication
+requests==2.31.0
+
+# Silver Tier - Scheduling
+schedule==1.2.1
+
+# Future dependencies (placeholder for Gold Tier expansion)
 # Uncomment when needed:
 
 # For Claude API integration (future)
@@ -32,11 +38,6 @@ google-api-python-client==2.116.0
 
 # For web scraping/automation (future)
 # beautifulsoup4==4.12.3
-# requests==2.31.0
-
-# For scheduling (future)
-# schedule==1.2.1
-# apscheduler==3.10.4
 
 # For database (future - if needed)
 # sqlalchemy==2.0.27

@@ -25,6 +25,14 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 
+# Silver Tier imports
+try:
+    from .planner import TaskPlanner
+    PLANNER_AVAILABLE = True
+except ImportError:
+    PLANNER_AVAILABLE = False
+    logging.warning("TaskPlanner not available - Silver Tier features disabled")
+
 
 logger = logging.getLogger("AIBrain")
 
@@ -143,6 +151,13 @@ class AIBrain:
         # Load handbook for decision-making context
         self.handbook = self._load_handbook()
 
+        # Initialize Silver Tier components
+        if PLANNER_AVAILABLE:
+            self.planner = TaskPlanner(str(vault_path))
+            logger.info("Silver Tier: TaskPlanner initialized")
+        else:
+            self.planner = None
+
         logger.info("AI Brain initialized successfully")
 
     def _load_handbook(self) -> str:
@@ -228,6 +243,11 @@ class AIBrain:
         if state.priority is None:
             return "prioritize_task"
 
+        # Silver Tier: Check if task needs planning
+        if self.planner and self._needs_planning(state):
+            if "plan_generated" not in state.actions_taken:
+                return "generate_plan"
+
         # If we've classified and prioritized, move to appropriate folder
         if "moved_to" not in [a.split(':')[0] for a in state.actions_taken]:
             # Decide where to move based on task type
@@ -242,6 +262,26 @@ class AIBrain:
 
         # All done
         return "complete"
+
+    def _needs_planning(self, state: TaskState) -> bool:
+        """
+        Determine if a task requires Silver Tier planning.
+
+        Args:
+            state: Current task state
+
+        Returns:
+            True if task needs planning, False otherwise
+        """
+        content_lower = state.content.lower()
+
+        # Tasks that need planning
+        planning_keywords = [
+            "email", "send", "post", "linkedin", "publish",
+            "create", "generate", "write and send"
+        ]
+
+        return any(keyword in content_lower for keyword in planning_keywords)
 
     def _act(self, state: TaskState, action: str):
         """
@@ -258,6 +298,9 @@ class AIBrain:
 
         elif action == "prioritize_task":
             self._prioritize_task(state)
+
+        elif action == "generate_plan":
+            self._generate_plan(state)
 
         elif action == "move_to_needs_action":
             self._move_to_needs_action(state)
@@ -511,3 +554,48 @@ Status: {'✅ Success' if not state.error else '❌ Error'}
             'reasoning': f"Classified as {state.task_type} with {state.priority} priority (confidence: {state.confidence:.2f})",
             'error': state.error
         }
+
+    def _generate_plan(self, state: TaskState):
+        """
+        Generate execution plan for complex tasks (Silver Tier).
+
+        Implements Skill #11: Generate_Plan
+        """
+        if not self.planner:
+            logger.warning("Planner not available - skipping plan generation")
+            state.actions_taken.append("plan_skipped:planner_unavailable")
+            return
+
+        try:
+            logger.info(f"📋 Generating execution plan for: {state.file_name}")
+
+            # Generate plan
+            result = self.planner.generate_plan(
+                task_content=state.content,
+                task_type=state.task_type,
+                priority=state.priority
+            )
+
+            if result["success"]:
+                logger.info(f"✅ Plan generated: {result['filename']}")
+                logger.info(f"   Approval required: {result['approval_required']}")
+                logger.info(f"   Risk level: {result['risk_level']}")
+
+                state.actions_taken.append(f"plan_generated:{result['filename']}")
+
+                if result["approval_required"]:
+                    # Move plan to Pending_Approval
+                    plan_path = Path(result['plan_path'])
+                    pending_path = self.vault_path / "Pending_Approval" / plan_path.name
+                    shutil.move(str(plan_path), str(pending_path))
+
+                    state.actions_taken.append("plan_moved_to_pending_approval")
+                    logger.info(f"📋 Plan moved to Pending_Approval for human review")
+            else:
+                logger.error(f"Failed to generate plan: {result.get('error')}")
+                state.actions_taken.append("plan_generation_failed")
+
+        except Exception as e:
+            logger.error(f"Error generating plan: {str(e)}", exc_info=True)
+            state.actions_taken.append(f"plan_error:{str(e)}")
+

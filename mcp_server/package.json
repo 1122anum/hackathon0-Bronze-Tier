@@ -1,0 +1,31 @@
+{
+  "name": "personal-ai-employee-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Personal AI Employee - Email and external actions",
+  "main": "email_mcp_server.js",
+  "scripts": {
+    "start": "node email_mcp_server.js",
+    "dev": "nodemon email_mcp_server.js",
+    "test": "node test_mcp_server.js"
+  },
+  "keywords": [
+    "mcp",
+    "email",
+    "automation",
+    "ai-employee"
+  ],
+  "author": "AI Employee System",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.7",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

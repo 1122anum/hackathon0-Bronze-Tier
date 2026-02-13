@@ -1,8 +1,8 @@
 # AI Employee Skills Registry
 
-**Version:** 2.0
-**Last Updated:** February 12, 2026
-**Total Skills:** 10
+**Version:** 3.0 - Silver Tier
+**Last Updated:** February 13, 2026
+**Total Skills:** 19
 **Status:** Production Ready
 
 ---
@@ -22,6 +22,7 @@ This document defines all operational skills available to the AI Employee system
 
 ## Skill Index
 
+### Bronze Tier Skills (Core)
 | # | Skill Name | Category | Trigger Type | Avg Duration |
 |---|------------|----------|--------------|--------------|
 | 1 | [Process_New_File](#skill-1-process_new_file) | Core | Event-Driven | 0.10s |
@@ -34,6 +35,19 @@ This document defines all operational skills available to the AI Employee system
 | 8 | [Log_Action](#skill-8-log_action) | System | Invoked | 0.01s |
 | 9 | [Generate_CEO_Briefing](#skill-9-generate_ceo_briefing) | Reporting | Scheduled | 2.50s |
 | 10 | [Archive_Old_Tasks](#skill-10-archive_old_tasks) | Maintenance | Scheduled | 1.00s |
+
+### Silver Tier Skills (Autonomous Actions)
+| # | Skill Name | Category | Trigger Type | Avg Duration |
+|---|------------|----------|--------------|--------------|
+| 11 | [Generate_Plan](#skill-11-generate_plan) | Planning | Invoked | 1.50s |
+| 12 | [Evaluate_Risk](#skill-12-evaluate_risk) | Analysis | Invoked | 0.80s |
+| 13 | [Request_Approval](#skill-13-request_approval) | Approval | Invoked | 0.10s |
+| 14 | [Execute_Approved_Action](#skill-14-execute_approved_action) | Execution | Invoked | 2.00s |
+| 15 | [Generate_LinkedIn_Post](#skill-15-generate_linkedin_post) | Content | Invoked | 1.20s |
+| 16 | [Send_Email_via_MCP](#skill-16-send_email_via_mcp) | External | Invoked | 0.50s |
+| 17 | [Monitor_Gmail](#skill-17-monitor_gmail) | Watcher | Event-Driven | 0.30s |
+| 18 | [Monitor_LinkedIn](#skill-18-monitor_linkedin) | Watcher | Event-Driven | 0.40s |
+| 19 | [Monitor_Approval_Status](#skill-19-monitor_approval_status) | Approval | Scheduled | 0.20s |
 
 ---
 
@@ -866,6 +880,510 @@ Metrics are aggregated in Dashboard.md.
 
 ---
 
+## SILVER TIER SKILLS
+
+---
+
+## Skill #11: Generate_Plan
+
+### Purpose
+Create structured execution plan (Plan.md) for complex tasks requiring multiple steps or external actions.
+
+### Trigger
+**Invoked:** Called by brain.py when a task requires planning before execution
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task_content` | string | Yes | Full task description |
+| `task_type` | string | Yes | Classified task type |
+| `priority` | string | Yes | Task priority |
+| `context` | dict | No | Additional context |
+
+### Process Steps
+
+1. **Analyze Task Requirements**
+   - Parse task content
+   - Identify objectives
+   - Determine required skills
+   - Assess complexity
+
+2. **Generate Plan Structure**
+   - Create Plan.md with sections:
+     - Objective
+     - Required Skills
+     - Execution Steps (numbered)
+     - Risk Assessment
+     - Approval Required (Yes/No)
+     - Estimated Outcome
+
+3. **Determine Approval Requirement**
+   - Sensitive actions (email, LinkedIn post, financial): Yes
+   - Read-only operations: No
+   - External API calls: Yes
+   - File modifications: No
+
+4. **Save Plan**
+   - Write to vault/Plans/Plan_{{timestamp}}_{{task_name}}.md
+   - Return plan path
+
+### Output
+
+```python
+{
+    "plan_path": str,
+    "approval_required": bool,
+    "risk_level": str,  # "Low", "Medium", "High"
+    "estimated_steps": int
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Plan.md created with all sections
+- ✅ Approval requirement determined
+- ✅ Risk assessment completed
+- ✅ File saved to Plans folder
+
+---
+
+## Skill #12: Evaluate_Risk
+
+### Purpose
+Assess risk level of planned actions to determine approval requirements.
+
+### Trigger
+**Invoked:** Called during plan generation
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `actions` | list[str] | Yes | List of planned actions |
+| `task_type` | string | Yes | Task type |
+
+### Process Steps
+
+1. **Scan for High-Risk Actions**
+   - Sending emails
+   - Posting to social media
+   - Financial transactions
+   - Data deletion
+   - External API calls
+
+2. **Calculate Risk Score**
+   - High-risk action: +3 points each
+   - Medium-risk action: +1 point each
+   - Low-risk action: +0 points
+
+3. **Determine Risk Level**
+   - Score >= 3: High Risk (requires approval)
+   - Score 1-2: Medium Risk (requires approval)
+   - Score 0: Low Risk (auto-execute)
+
+### Output
+
+```python
+{
+    "risk_level": str,
+    "risk_score": int,
+    "requires_approval": bool,
+    "risk_factors": list[str]
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Risk level determined
+- ✅ Approval requirement set
+- ✅ Risk factors documented
+
+---
+
+## Skill #13: Request_Approval
+
+### Purpose
+Move plan to Pending_Approval folder and wait for human approval.
+
+### Trigger
+**Invoked:** When plan requires approval
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `plan_path` | string | Yes | Path to Plan.md |
+| `task_name` | string | Yes | Task name |
+
+### Process Steps
+
+1. **Move Plan to Pending_Approval**
+   - Copy Plan.md to vault/Pending_Approval/
+   - Add approval metadata
+
+2. **Create Approval Request**
+   - Generate approval_request.md with:
+     - Task summary
+     - Risk assessment
+     - Required actions
+     - Approval instructions
+
+3. **Log Approval Request**
+   - Record in approval log
+   - Set status: "Pending"
+
+### Output
+
+```python
+{
+    "approval_id": str,
+    "pending_path": str,
+    "status": "pending"
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Plan moved to Pending_Approval
+- ✅ Approval request created
+- ✅ Status logged
+
+---
+
+## Skill #14: Execute_Approved_Action
+
+### Purpose
+Execute actions from approved plans.
+
+### Trigger
+**Invoked:** When plan status changes to "Approved"
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `plan_path` | string | Yes | Path to approved Plan.md |
+| `actions` | list[dict] | Yes | Actions to execute |
+
+### Process Steps
+
+1. **Load Approved Plan**
+   - Read Plan.md
+   - Parse execution steps
+   - Validate approval status
+
+2. **Execute Actions Sequentially**
+   - For each action:
+     - Call appropriate skill
+     - Log execution
+     - Handle errors
+     - Update progress
+
+3. **Move to Done**
+   - Move plan to Approved folder
+   - Create completion report
+   - Update dashboard
+
+### Output
+
+```python
+{
+    "success": bool,
+    "actions_completed": int,
+    "actions_failed": int,
+    "completion_report": str
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ All actions executed
+- ✅ Results logged
+- ✅ Plan archived
+
+---
+
+## Skill #15: Generate_LinkedIn_Post
+
+### Purpose
+Create business-focused LinkedIn content with engagement hooks.
+
+### Trigger
+**Invoked:** Scheduled daily or on-demand
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `topic` | string | No | Post topic (auto-generated if not provided) |
+| `tone` | string | No | "professional", "inspirational", "educational" |
+| `length` | string | No | "short" (100-150 words), "medium" (150-250), "long" (250-400) |
+
+### Process Steps
+
+1. **Generate Content**
+   - Create engaging hook (first line)
+   - Develop main content (business growth focus)
+   - Add call-to-action (CTA)
+   - Include 3-5 relevant hashtags
+
+2. **Format Post**
+   - Structure with line breaks for readability
+   - Add emojis strategically (1-3 max)
+   - Ensure professional tone
+
+3. **Save Draft**
+   - Write to vault/Needs_Action/LinkedIn_Post_{{timestamp}}.md
+   - Include metadata (topic, hashtags, CTA)
+
+4. **Request Approval**
+   - Move to Pending_Approval if auto-post disabled
+   - Or execute immediately if approved
+
+### Output
+
+```python
+{
+    "post_content": str,
+    "hashtags": list[str],
+    "draft_path": str,
+    "word_count": int
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Post generated
+- ✅ Professional tone maintained
+- ✅ CTA included
+- ✅ Hashtags added
+- ✅ Draft saved
+
+---
+
+## Skill #16: Send_Email_via_MCP
+
+### Purpose
+Send emails through MCP server with proper error handling.
+
+### Trigger
+**Invoked:** After approval for email tasks
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `to` | string | Yes | Recipient email |
+| `subject` | string | Yes | Email subject |
+| `body` | string | Yes | Email body (plain text or HTML) |
+| `cc` | string | No | CC recipients |
+| `attachments` | list[str] | No | File paths to attach |
+
+### Process Steps
+
+1. **Validate Inputs**
+   - Check email format
+   - Verify subject and body not empty
+   - Validate attachment paths
+
+2. **Call MCP Server**
+   - POST to http://localhost:3000/send-email
+   - Include all parameters
+   - Set timeout: 10 seconds
+
+3. **Handle Response**
+   - Success: Log and return success
+   - Failure: Log error, retry once
+   - Timeout: Log error, escalate
+
+4. **Log Action**
+   - Record email sent
+   - Include recipient, subject, timestamp
+
+### Output
+
+```python
+{
+    "success": bool,
+    "message_id": str,
+    "timestamp": str,
+    "error": str | None
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Email sent successfully
+- ✅ Confirmation received from MCP
+- ✅ Action logged
+
+---
+
+## Skill #17: Monitor_Gmail
+
+### Purpose
+Watch Gmail inbox for new emails and convert to tasks.
+
+### Trigger
+**Event-Driven:** Runs continuously via gmail_watcher.py
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `check_interval` | int | No | Seconds between checks (default: 60) |
+| `max_results` | int | No | Max emails per check (default: 10) |
+
+### Process Steps
+
+1. **Authenticate with Gmail API**
+   - Load credentials from token.json
+   - Refresh if expired
+
+2. **Fetch New Emails**
+   - Query for unread emails
+   - Filter by labels if configured
+   - Get last N emails
+
+3. **Convert to Markdown**
+   - Extract: from, subject, date, body
+   - Format as markdown
+   - Preserve formatting
+
+4. **Save to Inbox**
+   - Write to vault/Inbox/Email_{{timestamp}}.md
+   - Mark email as read (optional)
+   - Trigger brain.py
+
+### Output
+
+```python
+{
+    "emails_processed": int,
+    "new_tasks_created": int,
+    "errors": list[str]
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Gmail authenticated
+- ✅ New emails fetched
+- ✅ Converted to markdown
+- ✅ Saved to Inbox
+
+---
+
+## Skill #18: Monitor_LinkedIn
+
+### Purpose
+Monitor LinkedIn for content opportunities and posting triggers.
+
+### Trigger
+**Event-Driven:** Runs via linkedin_watcher.py
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `check_interval` | int | No | Seconds between checks (default: 300) |
+
+### Process Steps
+
+1. **Check Posting Schedule**
+   - Verify if daily post is due
+   - Check last post timestamp
+
+2. **Trigger Post Generation**
+   - If due: Call Generate_LinkedIn_Post
+   - Create plan
+   - Request approval
+
+3. **Monitor Engagement (Future)**
+   - Track post metrics
+   - Log engagement data
+
+### Output
+
+```python
+{
+    "post_triggered": bool,
+    "next_post_time": str,
+    "status": str
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Schedule checked
+- ✅ Post triggered if due
+- ✅ Status logged
+
+---
+
+## Skill #19: Monitor_Approval_Status
+
+### Purpose
+Check Pending_Approval folder for status changes and execute approved actions.
+
+### Trigger
+**Scheduled:** Runs every 30 seconds
+
+### Inputs
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `check_interval` | int | No | Seconds between checks (default: 30) |
+
+### Process Steps
+
+1. **Scan Pending_Approval Folder**
+   - List all Plan.md files
+   - Check for approval status changes
+
+2. **Detect Approval**
+   - Look for "APPROVED" marker in file
+   - Or check for file move to Approved folder
+
+3. **Execute Approved Actions**
+   - Call Execute_Approved_Action
+   - Move plan to Approved folder
+   - Log execution
+
+4. **Handle Rejections**
+   - If "REJECTED" marker found
+   - Move to Done with rejection note
+   - Log rejection
+
+### Output
+
+```python
+{
+    "approvals_processed": int,
+    "rejections_processed": int,
+    "executions_triggered": int
+}
+```
+
+### Completion Criteria
+
+**Success:**
+- ✅ Pending items checked
+- ✅ Approvals detected
+- ✅ Actions executed
+- ✅ Status updated
+
+---
+
 ## Adding New Skills
 
 To add a new skill:
@@ -899,6 +1417,7 @@ To add a new skill:
 
 ## Skill Usage Statistics
 
+### Bronze Tier Skills
 | Skill | Times Used | Success Rate | Avg Duration | Last Used |
 |-------|------------|--------------|--------------|-----------|
 | Process_New_File | 1 | 100% | 0.56s | 2026-02-12 16:35:38 |
@@ -912,14 +1431,28 @@ To add a new skill:
 | Generate_CEO_Briefing | 0 | N/A | N/A | Never |
 | Archive_Old_Tasks | 0 | N/A | N/A | Never |
 
+### Silver Tier Skills
+| Skill | Times Used | Success Rate | Avg Duration | Last Used |
+|-------|------------|--------------|--------------|-----------|
+| Generate_Plan | 0 | N/A | N/A | Never |
+| Evaluate_Risk | 0 | N/A | N/A | Never |
+| Request_Approval | 0 | N/A | N/A | Never |
+| Execute_Approved_Action | 0 | N/A | N/A | Never |
+| Generate_LinkedIn_Post | 0 | N/A | N/A | Never |
+| Send_Email_via_MCP | 0 | N/A | N/A | Never |
+| Monitor_Gmail | 0 | N/A | N/A | Never |
+| Monitor_LinkedIn | 0 | N/A | N/A | Never |
+| Monitor_Approval_Status | 0 | N/A | N/A | Never |
+
 *Statistics updated in real-time as skills are executed.*
 
 ---
 
 **Version History:**
+- **3.0** (2026-02-13): Silver Tier release - Added 9 autonomous action skills
 - **2.0** (2026-02-12): Production release with 10 core skills
 - **1.0** (2026-02-10): Initial skill definitions
 
-**Next Review:** 2026-03-12
+**Next Review:** 2026-03-13
 
 *This skills registry is the authoritative source for all AI Employee capabilities.*
