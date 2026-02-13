@@ -1,0 +1,47 @@
+# Personal AI Employee - Python Dependencies
+# ==========================================
+#
+# Core dependencies for the autonomous agent system
+# Python 3.13+ required
+
+# File system monitoring
+watchdog==4.0.0
+
+# Logging and utilities
+python-dotenv==1.0.1
+
+# Gmail API integration
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.116.0
+
+# Future dependencies (placeholder for Bronze Tier expansion)
+# Uncomment when needed:
+
+# For Claude API integration (future)
+# anthropic==0.18.1
+
+# For advanced text processing (future)
+# nltk==3.8.1
+# spacy==3.7.4
+
+# For data analysis (future)
+# pandas==2.2.0
+# numpy==1.26.4
+
+# For web scraping/automation (future)
+# beautifulsoup4==4.12.3
+# requests==2.31.0
+
+# For scheduling (future)
+# schedule==1.2.1
+# apscheduler==3.10.4
+
+# For database (future - if needed)
+# sqlalchemy==2.0.27
+
+# Development dependencies
+# pytest==8.0.0
+# black==24.2.0
+# flake8==7.0.0

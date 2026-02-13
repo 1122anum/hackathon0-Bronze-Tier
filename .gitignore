@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Logs
+logs/*.log
+*.log
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# Vault - Don't commit personal data
+vault/Inbox/*
+vault/Needs_Action/*
+vault/Done/*
+
+# But keep the folder structure
+!vault/Inbox/.gitkeep
+!vault/Needs_Action/.gitkeep
+!vault/Done/.gitkeep
+
+# Keep the core markdown files
+!vault/Dashboard.md
+!vault/Company_Handbook.md
+!vault/SKILLS.md
+
+# MCP (future)
+mcp/node_modules/
+mcp/dist/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Google OAuth credentials
+credentials.json
+token.json
